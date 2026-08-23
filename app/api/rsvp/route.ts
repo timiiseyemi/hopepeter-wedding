@@ -22,6 +22,8 @@ type RsvpPayload = {
   message: string
 }
 
+const emailInvitationVenue = '12, LIMPSON ROAD, BY RIVER VALLEY ESTATE, GATE B OJODU BERGER'
+
 function parseEmailList(value: string | undefined) {
   if (!value) return []
 
@@ -117,7 +119,7 @@ function invitationEmail(name: string, hasAttachment: boolean) {
                     <h1 style="margin:0;color:#254a36;font-size:42px;font-weight:normal;line-height:1.05;">${escapeHtml(wedding.groom)}</h1>
                     <div style="height:1px;width:48px;margin:30px auto;background:#c29a56;"></div>
                     <p style="margin:0;color:#254a36;font-family:Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;">${escapeHtml(wedding.dateLabel)}</p>
-                    <p style="margin:12px 0 0;color:#8a6035;font-family:Arial,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(wedding.location)}</p>
+                    <p style="margin:12px 0 0;color:#8a6035;font-family:Arial,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(emailInvitationVenue)}</p>
                     <p style="margin:34px 0 0;color:#6c7d69;font-size:17px;font-style:italic;line-height:1.6;">Dear ${firstName},</p>
                     <p style="margin:14px 0 0;color:#466451;font-size:16px;line-height:1.65;">Thank you for sharing your response with us. We are so grateful to have you in our lives and would be honoured to celebrate this special day with you.</p>
                     <p style="margin:14px 0 0;color:#466451;font-size:16px;line-height:1.65;">${cardMessage}</p>
@@ -212,7 +214,7 @@ export async function POST(request: Request) {
     to: payload.email,
     subject: `Your invitation to ${wedding.bride} & ${wedding.groom}'s wedding`,
     html: invitationEmail(payload.name, Boolean(cardAttachment)),
-    text: `Dear ${payload.name},\n\nThank you for sharing your response with us. We are so grateful to have you in our lives and would be honoured to celebrate this special day with you.\n\n${cardAttachment ? 'Your invitation card is attached to this email.' : 'Your invitation details are included in this email.'}\n\nWith love,\n${wedding.bride} & ${wedding.groom}`,
+    text: `Dear ${payload.name},\n\nThank you for sharing your response with us. We are so grateful to have you in our lives and would be honoured to celebrate this special day with you.\n\n${wedding.dateLabel}\n${emailInvitationVenue}\n\n${cardAttachment ? 'Your invitation card is attached to this email.' : 'Your invitation details are included in this email.'}\n\nWith love,\n${wedding.bride} & ${wedding.groom}`,
     attachments: cardAttachment,
   })
 

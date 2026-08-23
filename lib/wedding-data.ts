@@ -56,14 +56,14 @@ export const events = [
     title: 'Traditional Marriage Rites',
     date: 'Saturday, November 14',
     time: '11:30 AM',
-    venue: 'A joyful celebration of family, culture and union',
+    venue: '12, LIMPSON ROAD, BY RIVER VALLEY ESTATE, GATE B OJODU BERGER',
     icon: 'glass',
   },
   {
     title: 'Wedding Reception',
     date: 'Saturday, November 14',
     time: '2:00 PM',
-    venue: 'Lydia Hall',
+    venue: '12, LIMPSON ROAD, BY RIVER VALLEY ESTATE, GATE B OJODU BERGER',
     icon: 'suit',
   },
 ]
@@ -79,8 +79,8 @@ export const gallery = [
 
 export const schedule = [
   { time: '9:00 AM', title: 'Church Ceremony', description: 'Faith Family Bible Church, Ojodu Berger' },
-  { time: '11:30 AM', title: 'Traditional Marriage Rites', description: 'A celebration of our families, culture and union' },
-  { time: '2:00 PM', title: 'Reception', description: 'Feasting, joy and dancing at Lydia Hall' },
+  { time: '11:30 AM', title: 'Traditional Marriage Rites', description: '12, LIMPSON ROAD, BY RIVER VALLEY ESTATE, GATE B OJODU BERGER' },
+  { time: '2:00 PM', title: 'Reception', description: '12, LIMPSON ROAD, BY RIVER VALLEY ESTATE, GATE B OJODU BERGER' },
   { time: '3:00 PM', title: 'Guest Arrival', description: 'Welcome drinks on the terrace' },
   { time: '4:00 PM', title: 'Ceremony', description: 'The exchange of vows in the garden' },
   { time: '5:00 PM', title: 'Photography', description: 'Golden-hour portraits & mingling' },

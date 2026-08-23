@@ -92,7 +92,7 @@ function validPayload(value: unknown): value is RsvpPayload {
     rsvp.email.length <= MAX_LENGTHS.email &&
     validEmail(rsvp.email) &&
     (rsvp.attending === 'yes' || rsvp.attending === 'no') &&
-    /^[1-5]$/.test(rsvp.guests) &&
+    rsvp.guests === '1' &&
     rsvp.message.length <= MAX_LENGTHS.message
   )
 }

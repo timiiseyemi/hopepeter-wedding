@@ -164,25 +164,11 @@ export function Rsvp() {
                         </button>
                       ))}
                     </div>
+                    <p className="mt-3 text-center text-xs leading-relaxed text-accent-foreground/60">
+                      Each invitation is reserved for one guest.
+                    </p>
                   </div>
 
-                  <div>
-                    <label className={labelClass} htmlFor="guests">
-                      Guests in Your Party
-                    </label>
-                    <select
-                      id="guests"
-                      value={form.guests}
-                      onChange={(e) => update('guests', e.target.value)}
-                      className={`${inputClass} appearance-none`}
-                    >
-                      {['1', '2', '3', '4', '5'].map((n) => (
-                        <option key={n} value={n} className="bg-accent text-accent-foreground">
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
                   <div className="sm:col-span-2">
                     <label className={labelClass} htmlFor="message">
                       A Message for the Couple

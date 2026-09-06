@@ -165,7 +165,7 @@ export function Rsvp() {
                       ))}
                     </div>
                     <p className="mt-3 text-center text-xs leading-relaxed text-accent-foreground/60">
-                      Each invitation is reserved for one guest.
+                      Each invitation is reserved for one guest. This is an adults-only celebration; we kindly ask that no children attend.
                     </p>
                   </div>
 

@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { basename, resolve, sep } from 'node:path'
 import { Resend } from 'resend'
+import { supabaseServer } from '@/lib/supabase'
 import { wedding } from '@/lib/wedding-data'
 
 export const runtime = 'nodejs'
@@ -21,6 +22,8 @@ type RsvpPayload = {
   guests: string
   message: string
 }
+
+type RsvpRequest = RsvpPayload & { token: string }
 
 const emailInvitationVenue = '12, LIMPSON ROAD, BY RIVER VALLEY ESTATE, GATE B OJODU BERGER'
 
@@ -76,14 +79,14 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#039;')
 }
 
-function validPayload(value: unknown): value is RsvpPayload {
+function validPayload(value: unknown): value is RsvpRequest {
   if (!value || typeof value !== 'object') return false
 
   const payload = value as Record<string, unknown>
-  const strings = ['name', 'phone', 'email', 'attending', 'guests', 'message']
+  const strings = ['token', 'name', 'phone', 'email', 'attending', 'guests', 'message']
   if (strings.some((key) => typeof payload[key] !== 'string')) return false
 
-  const rsvp = payload as RsvpPayload
+  const rsvp = payload as RsvpRequest
   return (
     rsvp.name.trim().length > 0 &&
     rsvp.name.length <= MAX_LENGTHS.name &&
@@ -92,8 +95,9 @@ function validPayload(value: unknown): value is RsvpPayload {
     rsvp.email.length <= MAX_LENGTHS.email &&
     validEmail(rsvp.email) &&
     (rsvp.attending === 'yes' || rsvp.attending === 'no') &&
-    rsvp.guests === '1' &&
-    rsvp.message.length <= MAX_LENGTHS.message
+    rsvp.message.length <= MAX_LENGTHS.message &&
+    /^[a-f0-9]{32}$/.test(rsvp.token) &&
+    /^(?:[1-9]|1\d|20)$/.test(rsvp.guests)
   )
 }
 
@@ -173,12 +177,57 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Please check your details and try again.' }, { status: 400 })
   }
 
-  const payload: RsvpPayload = {
+  const requestPayload: RsvpRequest = {
     ...body,
-    name: body.name.trim(),
     phone: body.phone.trim(),
-    email: body.email.trim().toLowerCase(),
     message: body.message.trim(),
+  }
+
+  const database = supabaseServer()
+  const { data: invitation, error: invitationError } = await database
+    .from('invitations')
+    .select('id, name, email, phone, allowed_guests')
+    .eq('invite_token', requestPayload.token)
+    .maybeSingle()
+
+  if (invitationError) {
+    console.error('Could not look up invitation', invitationError)
+    return Response.json({ error: 'We could not verify your invitation. Please try again shortly.' }, { status: 502 })
+  }
+
+  if (!invitation) {
+    return Response.json({ error: 'This invitation link is invalid.' }, { status: 404 })
+  }
+
+  const requestedGuests = Number(requestPayload.guests)
+  if (requestPayload.attending === 'yes' && requestedGuests > invitation.allowed_guests) {
+    return Response.json({ error: `This invitation is reserved for up to ${invitation.allowed_guests} guest${invitation.allowed_guests === 1 ? '' : 's'}.` }, { status: 400 })
+  }
+
+  const payload: RsvpPayload = {
+    name: invitation.name,
+    email: requestPayload.email.trim().toLowerCase(),
+    phone: requestPayload.phone || invitation.phone || '',
+    attending: requestPayload.attending,
+    guests: String(requestPayload.attending === 'yes' ? requestedGuests : 0),
+    message: requestPayload.message,
+  }
+
+  const { error: updateError } = await database
+    .from('invitations')
+    .update({
+      rsvp_status: payload.attending === 'yes' ? 'attending' : 'declined',
+      email: payload.email,
+      rsvp_attendee_count: Number(payload.guests),
+      rsvp_phone: payload.phone || null,
+      rsvp_message: payload.message || null,
+      responded_at: new Date().toISOString(),
+    })
+    .eq('id', invitation.id)
+
+  if (updateError) {
+    console.error('Could not save RSVP', updateError)
+    return Response.json({ error: 'We could not save your RSVP. Please try again shortly.' }, { status: 502 })
   }
 
   // First try the card stored inside this project. A hosted URL remains available

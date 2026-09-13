@@ -1,37 +1,27 @@
-'use client'
+import { WeddingHome } from '@/components/wedding/home'
+import { supabaseServer } from '@/lib/supabase'
 
-import { motion } from 'motion/react'
-import { useState } from 'react'
-import { PageLoader } from '@/components/wedding/page-loader'
-import { Nav } from '@/components/wedding/nav'
-import { Hero } from '@/components/wedding/hero'
-import { EventDetails } from '@/components/wedding/event-details'
-import { Moments } from '@/components/wedding/moments'
-import { Schedule } from '@/components/wedding/schedule'
-import { Rsvp } from '@/components/wedding/rsvp'
-import { Footer } from '@/components/wedding/footer'
+export const dynamic = 'force-dynamic'
 
-export default function Page() {
-  const [invitationOpened, setInvitationOpened] = useState(false)
+export default async function Page({ searchParams }: { searchParams: Promise<{ invite?: string | string[] }> }) {
+  const { invite } = await searchParams
+  const token = typeof invite === 'string' ? invite : ''
+
+  if (!token) return <WeddingHome invitation={null} invitationState="none" />
+  if (!/^[a-f0-9]{32}$/.test(token)) return <WeddingHome invitation={null} invitationState="invalid" />
+
+  const { data: invitation, error } = await supabaseServer()
+    .from('invitations')
+    .select('name, phone, allowed_guests')
+    .eq('invite_token', token)
+    .maybeSingle()
+
+  if (error) throw new Error('Could not verify invitation.')
 
   return (
-    <>
-      <PageLoader onComplete={() => setInvitationOpened(true)} />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: invitationOpened ? 1 : 0 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <Nav />
-        <main className="relative">
-          <Hero />
-          <EventDetails />
-          <Moments />
-          <Schedule />
-          <Rsvp />
-          <Footer />
-        </main>
-      </motion.div>
-    </>
+    <WeddingHome
+      invitation={invitation ? { token, name: invitation.name, phone: invitation.phone || '', allowedGuests: invitation.allowed_guests } : null}
+      invitationState={invitation ? 'valid' : 'invalid'}
+    />
   )
 }

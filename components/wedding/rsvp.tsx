@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, Heart } from 'lucide-react'
 import { useState } from 'react'
-import { SectionHeading } from './section-heading'
 
 type FormState = {
   name: string
@@ -14,22 +13,28 @@ type FormState = {
   message: string
 }
 
-const initial: FormState = {
-  name: '',
-  phone: '',
-  email: '',
-  attending: 'yes',
-  guests: '1',
-  message: '',
-}
-
 const inputClass =
   'w-full border-0 border-b border-border bg-transparent px-1 py-3 text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors duration-300 focus:border-gold'
 
 const labelClass = 'mb-1 block text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground'
 
-export function Rsvp() {
-  const [form, setForm] = useState<FormState>(initial)
+type Invitation = {
+  token: string
+  name: string
+  phone: string
+  allowedGuests: number
+}
+
+export function Rsvp({ invitation, invitationState }: { invitation: Invitation | null; invitationState: 'none' | 'invalid' | 'valid' }) {
+  const activeInvitation = invitationState === 'valid' ? invitation : null
+  const [form, setForm] = useState<FormState>({
+    name: invitation?.name || '',
+    phone: invitation?.phone || '',
+    email: '',
+    attending: 'yes',
+    guests: '1',
+    message: '',
+  })
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -49,7 +54,7 @@ export function Rsvp() {
       const response = await fetch('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, token: activeInvitation?.token }),
       })
       const result = (await response.json()) as { error?: string; invitationSent?: boolean }
 
@@ -85,13 +90,31 @@ export function Rsvp() {
             Will You Join Us?
           </h2>
           <p className="mt-5 max-w-md leading-relaxed text-accent-foreground/70">
-            Kindly reply by the fifteenth of October. Your presence would mean the world to us.
+            {activeInvitation
+              ? <>Kindly reply by the fifteenth of October. Your presence would mean the world to us, {activeInvitation.name}.</>
+              : 'Kindly reply by the fifteenth of October. Your presence would mean the world to us.'}
           </p>
         </div>
 
         <div className="relative mt-14">
           <AnimatePresence mode="wait">
-            {!submitted ? (
+            {!activeInvitation ? (
+              <motion.div
+                key="locked"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="glass-dark rounded-sm border border-background/10 p-10 text-center"
+              >
+                <p className="font-serif text-3xl font-light">
+                  {invitationState === 'invalid' ? 'Invitation not found' : 'Private RSVP'}
+                </p>
+                <p className="mx-auto mt-4 max-w-md leading-relaxed text-accent-foreground/70">
+                  {invitationState === 'invalid'
+                    ? 'Please check your invitation link or contact the couple.'
+                    : 'Please use the personal invitation link sent to you to RSVP.'}
+                </p>
+              </motion.div>
+            ) : !submitted ? (
               <motion.form
                 key="form"
                 onSubmit={handleSubmit}
@@ -110,9 +133,8 @@ export function Rsvp() {
                       id="name"
                       required
                       value={form.name}
-                      onChange={(e) => update('name', e.target.value)}
-                      placeholder="Your name"
-                      className={inputClass}
+                      readOnly
+                      className={`${inputClass} cursor-not-allowed opacity-70`}
                     />
                   </div>
                   <div>
@@ -165,9 +187,25 @@ export function Rsvp() {
                       ))}
                     </div>
                     <p className="mt-3 text-center text-xs leading-relaxed text-accent-foreground/60">
-                      Each invitation is reserved for one guest. This is an adults-only celebration; we kindly ask that no children attend.
+                      This invitation is reserved for up to {activeInvitation.allowedGuests} {activeInvitation.allowedGuests === 1 ? 'guest' : 'guests'}. This is an adults-only celebration; we kindly ask that no children attend.
                     </p>
                   </div>
+
+                  {form.attending === 'yes' && activeInvitation.allowedGuests > 1 ? (
+                    <div className="sm:col-span-2">
+                      <label className={labelClass} htmlFor="guests">Guests attending</label>
+                      <select
+                        id="guests"
+                        value={form.guests}
+                        onChange={(e) => update('guests', e.target.value)}
+                        className={inputClass}
+                      >
+                        {Array.from({ length: activeInvitation.allowedGuests }, (_, index) => String(index + 1)).map((count) => (
+                          <option key={count} value={count}>{count}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
 
                   <div className="sm:col-span-2">
                     <label className={labelClass} htmlFor="message">
